@@ -13,19 +13,20 @@ namespace PathfindingProject
         static int mazeLength = 10;
         static int mazeHeight = 10;
         static int[,] maze = new int[mazeLength, mazeHeight];
+        static Point currentPoint = new Point(0,0);
         // List of points that the AI has been at
-        List<Point> pastCoordinates = new List<Point>();
+        static List<Point> pastCoordinates = new List<Point>();
 
         static void Main(string[] args)
         {
-            // Algorithm that randomly fills in blocks for the maze (0 = clear, 1 = wall, 3 = start, 4 = finish)
-            FillMaze();
+            //FillMaze();
             PrintMaze();
 
             Console.WriteLine("Press any key to continue ...");
             Console.ReadKey();
         }
 
+        // Algorithm that randomly fills in blocks for the maze (0 = clear, 1 = wall, 3 = start, 4 = finish)
         static void FillMaze()
         {
             for (int i = 0; i < mazeLength; i++)
@@ -34,6 +35,56 @@ namespace PathfindingProject
                 {
                     maze[i,j] = 0;
                 }
+            }
+            // marks start and end point of maze
+            maze[0, 0] = 3;
+            maze[mazeLength, mazeHeight] = 4;
+        }
+
+        static void RunMaze()
+        {
+            bool canMove = true;
+            int x = 0;
+            int y = 0;
+            
+            // Keeps looking for next point to move to
+            while (canMove)
+            {
+                currentPoint.X = x;
+                currentPoint.Y = y;
+
+                // Checks if there is a wall, if not moves AI to that point
+                if (y < mazeHeight && y+1 != 1)
+                {
+                    y++;
+                    currentPoint.Y = y;
+                    // adds the new coordinates to the List
+                    pastCoordinates.Add(new Point(x, y));
+                    // Checks if the AI is at the end
+                    canMove = IsFinished(x, y);
+                }
+                if (x < mazeLength && y+1 != 1)
+                {
+                    x++;
+                    currentPoint.X = x;
+                    pastCoordinates.Add(new Point(x, y));
+                    canMove = IsFinished(x, y);
+                }                
+            }
+
+        }
+
+        // Checks if Ai is at the end of the maze
+        static bool IsFinished(int _x, int _y)
+        {
+            if (maze[_x,_y] == 4)
+            {
+                Console.WriteLine("End Reached");
+                return false;
+            }
+            else
+            {
+                return true;
             }
         }
 
