@@ -6,23 +6,21 @@ namespace PathfindingProject
 {
     class Program
     {
-        // number of moves to easily compare which path is more efficient
-        int numOfMoves = 0;
-
         // Grid that the AI will go through
         static int mazeLength = 10;
         static int mazeHeight = 10;
         static int[,] maze = new int[mazeLength, mazeHeight];
-        static Point currentPoint = new Point(0,0);
+        static int numOfWalls = 10;
         // List of points that the AI has been at
         static List<Point> pastCoordinates = new List<Point>();
 
         static void Main(string[] args)
         {
-            //FillMaze();
+            FillMaze();
             PrintMaze();
+            RunMaze();
 
-            Console.WriteLine("Press any key to continue ...");
+            Console.WriteLine("\nPress any key to continue ...");
             Console.ReadKey();
         }
 
@@ -33,43 +31,102 @@ namespace PathfindingProject
             {
                 for (int j = 0; j < mazeHeight; j++)
                 {
-                    maze[i,j] = 0;
+                    if (GetRandomInt() < 2 && numOfWalls > 0)
+                    {
+                        maze[i, j] = 1;
+                        numOfWalls--;
+                    }
+                    else
+                    {
+                        maze[i, j] = 0;
+                    }
                 }
             }
-            // marks start and end point of maze
-            maze[0, 0] = 3;
-            maze[mazeLength, mazeHeight] = 4;
+            // marks end point of maze
+            maze[mazeLength-1, mazeHeight-1] = 4;
+        }
+
+        static int GetRandomInt()
+        {
+            Random random = new Random();
+            int i = random.Next(1, 10); ;
+            return i;
         }
 
         static void RunMaze()
         {
-            bool canMove = true;
+            bool cantMove = false;
+
+            // Required to see if the Ai is retracing stepsw
+            bool lastMoveDown = false;
+            bool lastMoveRight = false;
+
             int x = 0;
             int y = 0;
             
             // Keeps looking for next point to move to
-            while (canMove)
+            while (cantMove == false)
             {
-                currentPoint.X = x;
-                currentPoint.Y = y;
+                // Visually shows where the Ai has been
+                maze[x, y] = 8;
 
-                // Checks if there is a wall, if not moves AI to that point
-                if (y < mazeHeight && y+1 != 1)
+                //Checks if there the Ai can move down
+                if (y < mazeHeight - 1 && maze[x, y + 1] != 1 && maze[x,y+1] != 9)
                 {
                     y++;
-                    currentPoint.Y = y;
                     // adds the new coordinates to the List
                     pastCoordinates.Add(new Point(x, y));
                     // Checks if the AI is at the end
-                    canMove = IsFinished(x, y);
+                    cantMove = IsFinished(x, y);
+                    lastMoveDown = true;
+                    lastMoveRight = false;
                 }
-                if (x < mazeLength && y+1 != 1)
+                // Checks if the Ai can move right
+                else if (x < mazeLength-1 && maze[x+1,y] != 1)
                 {
                     x++;
-                    currentPoint.X = x;
                     pastCoordinates.Add(new Point(x, y));
-                    canMove = IsFinished(x, y);
-                }                
+                    cantMove = IsFinished(x, y);
+                    lastMoveDown = false;
+                    lastMoveRight = true;
+                }
+                // Allows the AI to go up
+                else if (y > 0 && maze[x,y-1] != 1)
+                {
+                    if (lastMoveDown)
+                    {
+                        maze[x, y] = 9;
+                        y--;
+                        // Removes the last step it took
+                        pastCoordinates.RemoveAt(pastCoordinates.Count - 1);
+                    }
+                    else
+                    {
+                        y--;
+                        pastCoordinates.Add(new Point(x, y));
+                    }
+                    cantMove = IsFinished(x, y);
+                    lastMoveRight = false;
+                    lastMoveDown = false;
+                }
+                // Allows the AI to go left
+                else if (x > 0 && maze[x-1,y] != 1)
+                {
+                    if (lastMoveRight)
+                    {
+                        maze[x, y] = 9;
+                        x--;
+                        pastCoordinates.RemoveAt(pastCoordinates.Count - 1);
+                    }
+                    else
+                    {
+                        x--;
+                        pastCoordinates.Add(new Point(x,y));
+                    }
+                    cantMove = IsFinished(x, y);
+                    lastMoveRight = false;
+                    lastMoveDown = false;
+                }
             }
 
         }
@@ -79,18 +136,31 @@ namespace PathfindingProject
         {
             if (maze[_x,_y] == 4)
             {
-                Console.WriteLine("End Reached");
-                return false;
+                Console.Clear();
+                PrintMaze();
+                Console.Write("Ai's Path: ");
+                for (int i = 0; i < pastCoordinates.Count; i++)
+                {
+                    Console.Write(pastCoordinates[i] + " ");
+                }
+                Console.WriteLine("\nEnd Reached. Ai reached the end in " + pastCoordinates.Count + " moves");
+                return true;
             }
             else
             {
-                return true;
+                Console.Clear();
+                PrintMaze();
+                Console.WriteLine("\nNot there yet. Press any key to continue to next step ...\n");
+                Console.ReadKey();
+                return false;
             }
         }
 
         // Not required but easier to visualize
         static void PrintMaze()
         {
+            Console.WriteLine("'0' Empty Space\n'1' Wall\n'4' Goal\n'8' Past Coordinate of Ai\n'9' Dead End\n\n");
+
             // Constructs Board
             int n = 0;
             Console.Write("  ");
@@ -104,13 +174,49 @@ namespace PathfindingProject
             {
                 n++;
                 Console.Write("\n" + n + " ");
-                Console.Write("|" + maze[0, i] + "|");
+                Console.Write("|");
+                ColorCoding(0, i);
+                Console.Write("|");
                 for (int j = 1; j < mazeLength; j++)
                 {
-                    Console.Write("|" + maze[j, i] + "|");
+                    Console.Write("|");
+                    ColorCoding(j,i);
+                    Console.Write("|");
                 }
             }
             Console.WriteLine();
+        }
+
+        static void ColorCoding(int _x, int _y)
+        {
+            if (maze[_x, _y] == 1)
+            {
+                Console.ForegroundColor = ConsoleColor.Magenta;
+                Console.Write(maze[_x, _y]);
+                Console.ResetColor();
+            }
+            else if (maze[_x, _y] == 3 || maze[_x, _y] == 4)
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.Write(maze[_x, _y]);
+                Console.ResetColor();
+            }
+            else if (maze[_x, _y] == 8)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.Write(maze[_x, _y]);
+                Console.ResetColor();
+            }
+            else if (maze[_x, _y] == 9)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write(maze[_x, _y]);
+                Console.ResetColor();
+            }
+            else
+            {
+                Console.Write(maze[_x, _y]);
+            }
         }
     }
 }
