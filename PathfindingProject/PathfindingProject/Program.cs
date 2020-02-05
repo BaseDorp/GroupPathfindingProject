@@ -13,13 +13,30 @@ namespace PathfindingProject
         static int numOfWalls = 10;
         // List of points that the AI has been at
         static List<Point> pastCoordinates = new List<Point>();
+        static List<int> bestCoordinates = new List<int>();
+        static int shortestPath;
 
         static void Main(string[] args)
         {
             FillMaze();
             PrintMaze();
-            RunMaze();
 
+            RunMaze();
+            shortestPath = bestCoordinates[0];
+            for (int k = 0; k < 10; k++)
+            {
+                RunMaze();
+            }
+
+            for (int i = 0; i < bestCoordinates.Count; i++)
+            {
+                Console.Write(bestCoordinates[i] + " ");
+                if (bestCoordinates[i] < shortestPath) shortestPath = bestCoordinates[i];
+            }
+
+
+            Console.WriteLine("\nThe most efficient path is: " + shortestPath + " moves");
+    
             Console.WriteLine("\nPress any key to continue ...");
             Console.ReadKey();
         }
@@ -128,7 +145,6 @@ namespace PathfindingProject
                     lastMoveDown = false;
                 }
             }
-
         }
 
         // Checks if Ai is at the end of the maze
@@ -144,14 +160,16 @@ namespace PathfindingProject
                     Console.Write(pastCoordinates[i] + " ");
                 }
                 Console.WriteLine("\nEnd Reached. Ai reached the end in " + pastCoordinates.Count + " moves");
+                bestCoordinates.Add(pastCoordinates.Count);
+                pastCoordinates.Clear();
                 return true;
             }
             else
             {
                 Console.Clear();
                 PrintMaze();
-                Console.WriteLine("\nNot there yet. Press any key to continue to next step ...\n");
-                Console.ReadKey();
+                Console.WriteLine("\nNot there yet...\n");
+               // Console.ReadKey();
                 return false;
             }
         }
